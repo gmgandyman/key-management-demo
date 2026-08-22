@@ -1,0 +1,15 @@
+networks:
+  demo-net:
+    name: demo-net # Lock the network name down, even if files move around. Docker likes to prefix things based on directories and file names
+    external: true
+
+services:
+  toolbox:
+    profiles: [tools]  # Setting a profile prevents this from running on up -d
+    build: ./tools/toolbox
+    image: demo-toolbox # No letting docker pick weird names
+    networks: [demo-net]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # Yes, we have to do this, we need DooD to do the work
+      - .:/work   # yes, we are mounting the entire project under /work in the container
+    working_dir: /work

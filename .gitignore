@@ -1,0 +1,11 @@
+# IDEs
+.idea
+
+# Python's virtual env
+.venv
+
+# private/public keys
+keys
+
+# Private to public scripting
+public-release-sync
