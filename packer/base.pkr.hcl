@@ -24,6 +24,10 @@ source "docker" "debian_trixie" {
     ]
 }
 
+locals {
+    base_scripts_dir = "${var.scripts_root}/base"
+}
+
 build {
     name = "debian-custom"
     sources = [
@@ -36,9 +40,10 @@ build {
         ]
 
         scripts = [
-            "packer/scripts/install-base-packages.sh",
-            "packer/scripts/install-sshd.sh",
-            "packer/scripts/setup-nopasswd-sudo.sh"
+            "${local.base_scripts_dir}/init-apt.sh",
+            "${local.base_scripts_dir}/install-base-packages.sh",
+            "${local.base_scripts_dir}/install-sshd.sh",
+            "${local.base_scripts_dir}/setup-nopasswd-sudo.sh"
         ]
     }
 
@@ -50,13 +55,14 @@ build {
 
     provisioner "shell" {
         scripts = [
-            "packer/scripts/add-deploy-user.sh",
-            "packer/scripts/setup-ssh-directory.sh"
+            "${local.base_scripts_dir}/add-deploy-user.sh",
+            "${local.base_scripts_dir}/setup-ssh-directory.sh",
+            "${local.base_scripts_dir}/cleanup.sh"
         ]
     }
 
     post-processor "docker-tag" {
-        repository = "simple-server"
-        tags = ["demo-trixie-slim"]
+        repository = var.base_image_name
+        tags = [var.image_tag]
     }
 }

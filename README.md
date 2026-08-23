@@ -62,15 +62,20 @@ for all the tools needed to do everything except the actual Java development.
   * /tools/toolbox/Dockerfile - Edit this to add/remove packages from your toolbox 
   * /tools/toolbox/scripts - Lots of scripts that can save you time and effort
 * .gitattributes - I'm calling this out because Window's CRLF line remain a contant timesink for me, and this file helps with that. Before you've commited, remember, ```sed -i 's/\r$//' [filename]``` is your friend.
-* compose.yml - Setups up the toolbox container and it's attached network. Don't forget to attach any containers you create to this network or you won't be able to SSH to them.
+* compose.yml - Setups up the toolbox container and its attached network. Don't forget to attach any containers you create to this network or you won't be able to SSH to them.
 
 ## That's all great. How do I actually run this as quickly as possible
 Note: Still in active development, more to come
 
+### Set up your terminal with some environment variables and helper bash functions
+```bash
+source bash-functions.sh
+```
+
 ### Build the main development toolbox
 
 ```bash
-docker compose run --rm toolbox bash
+start-toolbox
 ```
 
 That will start a fresh process that will remove itself when you're finished. But once you're inside your toolbox container:
@@ -90,16 +95,19 @@ ssh-keygen -t ed25519 -f keys/master_key -N "" -C "master@demo"
 ```
 
 ### Build the packer images from your toolbox container
+Note that the 2nd parameter here is the packer/ directory
 ```bash
-packer init packer  # Install any plugins your .hcl needs, the 2nd packer here is the packer folder, it will find the .hcl file inside
-packer build packer/base.pkr.hcl
+bash tools/toolbox/scripts/build-packer.sh
 ```
 
-### Start it up
+## Boot up the postgres container
 ```bash
-docker run -d --name throwaway --network demo-net simple-server:demo-trixie-slim
-ping throwaway
-ssh -i keys/master_key deploy@throwaway
+docker compose up -d
+ping postgres
+ssh -i keys/master_key deploy@postgres
+
+# If you've had to do this a couple of times in a single session (ask me how I know), and your known_keys file is blocking you
+ssh -i keys/master_key -o StrictHostKeyChecking=no deploy@postgres
 
 # should show the deploy user id
 deploy@${container-id}:~$ id
@@ -108,5 +116,12 @@ deploy@${container-id}:~$ id
 deploy@${container-id}:~$ sudo id
 ```
 
-If you've had to do this a couple of times in a single session (ask me how I know), and your known_keys file is blocking you
-```ssh -i keys/master_key -o StrictHostKeyChecking=no deploy@throwaway```
+## Reset back to a clean slate
+If you sourced teh bash-functions.sh script file, you can run the following bash function to remove any image files
+that the toolbox or packer have created. Note that this includes unbound volume data, which is
+where the Postgres tables are stored.
+
+```bash
+reset-to-blank
+```
+

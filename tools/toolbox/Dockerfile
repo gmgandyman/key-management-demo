@@ -14,6 +14,7 @@ RUN apt-get update && \
     apt-get install --yes --no-install-recommends \
         ansible-core \
         docker-cli \
+        docker-compose \
         ca-certificates \
         curl \
         gnupg \

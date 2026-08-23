@@ -1,14 +1,26 @@
 networks:
-  demo-net:
-    name: demo-net # Lock the network name down, even if files move around. Docker likes to prefix things based on directories and file names
+  demo-network:
+    name: ${NETWORK_NAME:?NETWORK_NAME not set in .env}
     external: true
 
+volumes:
+  postgres-data:
+
 services:
+  postgres:
+    container_name: postgres-db
+    image: ${POSTGRES_IMAGE_NAME}:${IMAGE_TAG}
+    networks: [demo-network]
+    volumes:
+      - postgres-data:/var/lib/postgresql/17/main
+
   toolbox:
+    container_name: toolbox-shell
     profiles: [tools]  # Setting a profile prevents this from running on up -d
     build: ./tools/toolbox
-    image: demo-toolbox # No letting docker pick weird names
-    networks: [demo-net]
+    image: ${TOOLBOX_IMAGE_NAME:?TOOLBOX_IMAGE_NAME not set in .env}:${IMAGE_TAG:?IMAGE_TAG not set in .env}
+    networks: [demo-network]
+    env_file: .env   # exports every KEY=VALUE in .env as real env vars inside the container
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock   # Yes, we have to do this, we need DooD to do the work
       - .:/work   # yes, we are mounting the entire project under /work in the container

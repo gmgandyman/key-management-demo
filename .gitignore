@@ -1,7 +1,8 @@
 # IDEs
 .idea
 
-# Python's virtual env
+# Local stuff
+.env
 .venv
 
 # private/public keys
