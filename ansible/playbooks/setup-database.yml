@@ -1,0 +1,49 @@
+# See plans/postgres-seed-playbook.md §2-3 for the task shape:
+#   1. become: yes — copy tools/db/schema.sql and tools/db/seed.sql to the target
+#   2. become: yes, become_user: postgres — run each via
+#      `psql -v ON_ERROR_STOP=1 -f <copied path>` (ansible.builtin.command),
+#      no -h/-U, so it connects over the local socket as peer auth
+---
+- name: Setup postgres database
+  hosts: database
+  become: true
+  vars:
+    db_name: authorized_keys
+  tasks:
+    - name: Copy schema file to the server
+      ansible.builtin.copy:
+        src: /work/tools/db/schema.sql
+        dest: /tmp/schema.sql
+        mode: '0644'
+
+    - name: Copy seed file to the server
+      ansible.builtin.copy:
+        src: /work/tools/db/seed.sql
+        dest: /tmp/seed.sql
+        mode: '0644'
+
+    - name: Check if database exists
+      become_user: postgres
+      # -t returns row data only, -A turns off column padding, and -c runs the next command as a query and returns the value
+      ansible.builtin.command: psql -tAc "SELECT 1 FROM pg_database WHERE datname = '{{ db_name }}'"
+      register: db_exists_check
+      changed_when: false # this task always shows idempotent, no change, we usse db_exists_check in the next task
+
+    - name: Create database
+      become_user: postgres
+      ansible.builtin.command: createdb {{ db_name }}
+      when: db_exists_check.stdout.strip() != '1' # here is where we consume the result of 'Check if database exists'
+
+    - name: Setup schema into database
+      become_user: postgres
+      ansible.builtin.shell: psql -d {{ db_name }} -f /tmp/schema.sql
+      # Reminder, the following just detect a change, not success or failure
+      register: db_schema_result
+      changed_when: "'CREATE TABLE' in db_schema_result.stdout"
+
+    - name: Import seed data into database
+      become_user: postgres
+      ansible.builtin.shell: psql -d {{ db_name }} -f /tmp/seed.sql
+      # Reminder, the following just detect a change, not success or failure
+      register: db_seed_result
+      changed_when: "'INSERT' in db_seed_result.stdout or 'UPDATE' in db_seed_result.stdout"

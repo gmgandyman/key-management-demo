@@ -10,7 +10,9 @@ services:
   postgres:
     container_name: postgres-db
     image: ${POSTGRES_IMAGE_NAME}:${IMAGE_TAG}
-    networks: [demo-network]
+    networks:
+      demo-network:
+        ipv4_address: 10.20.30.3
     volumes:
       - postgres-data:/var/lib/postgresql/17/main
 
@@ -19,7 +21,9 @@ services:
     profiles: [tools]  # Setting a profile prevents this from running on up -d
     build: ./tools/toolbox
     image: ${TOOLBOX_IMAGE_NAME:?TOOLBOX_IMAGE_NAME not set in .env}:${IMAGE_TAG:?IMAGE_TAG not set in .env}
-    networks: [demo-network]
+    networks:
+      demo-network:
+        ipv4_address: 10.20.30.2
     env_file: .env   # exports every KEY=VALUE in .env as real env vars inside the container
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock   # Yes, we have to do this, we need DooD to do the work
