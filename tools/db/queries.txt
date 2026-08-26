@@ -1,0 +1,6 @@
+select s.name as server_name, s.ip_address, str.login_account as login, r.name as role_name, au.username, au.email_address, au.public_key
+    from app_user au
+    inner join role_to_user rtu on rtu.user_id = au.id
+    inner join role r on rtu.role_id = r.id
+    inner join server_to_role str ON str.role_id = r.id
+    inner join server s ON s.id = str.server_id;

@@ -47,6 +47,7 @@ for all the tools needed to do everything except the actual Java development.
 ## Dependencies
 * Docker Desktop for Windows and macOS, Docker Engine for Linux
 * JDK 21 for building the API endpoint (still pending)
+* Running on the same filesystem as your docker daemon/socket (sorry, no docker over SSL)
 
 ### Software stack
 * Docker
@@ -71,6 +72,11 @@ for all the tools needed to do everything except the actual Java development.
 That's all great. How do I actually run this as quickly as possible?
 
 Note: Still in active development, more to come
+
+### 1 time setup stuff
+```bash
+docker network create --subnet 10.20.30.0/24 demo-net
+```
 
 ### Set up your terminal with some environment variables and helper bash functions
 ```bash
@@ -138,7 +144,14 @@ sudo -u postgres psql -d authorized_keys
 ```
 
 ```postgresql
-SELECT * FROM app_user WHERE true;
+# The query
+select s.name as server_name, s.ip_address, str.login_account as login, r.name as role_name, au.username, au.email_address, au.public_key
+from app_user au
+       inner join role_to_user rtu on rtu.user_id = au.id
+       inner join role r on rtu.role_id = r.id
+       inner join server_to_role str ON str.role_id = r.id
+       inner join server s ON s.id = str.server_id;
+
 \q
 ```
 
