@@ -1,0 +1,25 @@
+# Here is where we wire everything together
+- name: Setup postgres database
+  hosts: database # see hosts.yml
+  become: true  # every task needs to become
+  roles:
+    - common
+    - ssh_access # this must come after common
+    - postgres
+
+- name: Setup Nginx proxy
+  hosts: proxy
+  become: true
+  roles:
+    - common
+    - ssh_access # this must come after common
+    - nginx
+
+- name: Setup Apache python webserver
+  hosts: webserver
+  become: true
+  roles:
+    - common
+    - ssh_access # this must come after common
+    - apache-python
+

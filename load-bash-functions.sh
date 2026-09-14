@@ -13,7 +13,7 @@ source .env
 set +a
 
 start-toolbox() {
-  docker compose run --rm $TOOLBOX_SERVICE_NAME bash
+  docker compose run --rm --build $TOOLBOX_SERVICE_NAME bash
 }
 
 reset-to-blank() {

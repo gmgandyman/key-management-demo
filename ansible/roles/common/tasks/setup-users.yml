@@ -1,0 +1,32 @@
+---
+- name: Ensure roles (unix groups) exist on this host
+  ansible.builtin.group:
+    name: "{{item}}"
+    state: present
+  loop: "{{ server_roles | default([]) }}"  # default([]) makes sure that a host with no groups managed by this config doesn't error
+
+- name: Ensure user accounts exist
+  ansible.builtin.user:
+    name: "{{item.username}}"
+    groups: "{{ item.groups | default([]) }}"
+    append: false # groups match roles exactly, if a role is deleted, remove the matching group
+    shell: /bin/bash
+    create_home: true
+    state: present
+  loop: "{{ authorized_users | default([]) }}"
+  loop_control:
+      label: "{{item.username}}"
+
+- name: Ensure ~/.ssh exists
+  ansible.builtin.file:
+    path: "/home/{{item.username}}/.ssh"
+    state: directory  # lol, okay ansible
+    owner: "{{item.username}}"
+    group: "{{item.username}}"
+    mode: "0700"  # sshd requires 700, also, don't use numbers, they don't play nice
+  loop: "{{ authorized_users | default([]) }}"
+  loop_control:
+    label: "{{item.username}}"
+
+# authorized_keys itself (a file, not a .d directory) is reconciled by the
+# ssh_access role -- see ansible/roles/ssh_access/tasks/main.yml

@@ -1,0 +1,13 @@
+---
+# This is a bit of a knockoff of packer/scripts/base/setup-nopasswd-sudo.sh
+- name: Grant no-password sudo to the admin group
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/admin-group
+    content: |
+      # Managed by Ansible - do not edit manually
+      %admin ALL=(ALL) NOPASSWD:ALL
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "/usr/sbin/visudo -csf %s"   # Validate! Before you lock us out! -csf is check only, -f file, -s strict mode, %s is the temp file
+  when: "'admin' in (server_roles | default([]))"  # this will only run if admin is in server_roles, see host_vars

@@ -1,0 +1,4 @@
+# host_vars/postgres-db/keys.yml [GENERATED]
+server_roles: [admin]
+authorized_users:
+  - { username: alice, public_key: "", groups: [admin] }

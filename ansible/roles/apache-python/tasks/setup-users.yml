@@ -1,0 +1,11 @@
+---
+- name: Create dev users
+  ansible.builtin.user:
+    name: "{{item.owner}}"
+    groups: "{{item.group}}"
+    append: false # groups match roles exactly, if a role is deleted, remove the matching group
+    shell: /bin/bash
+    state: present
+  loop: "{{ root_web_directories }}"
+  loop_control:
+    label: "{{item.name}}"

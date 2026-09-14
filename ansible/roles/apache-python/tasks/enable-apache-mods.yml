@@ -1,0 +1,12 @@
+---
+- name: Enable Apache modules
+  community.general.apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - wsgi
+    - headers
+  notify: listen for reload apache
+
+  # wsgi for python
+  # headers because often we need to set custom headers for Nginx

@@ -1,0 +1,6 @@
+# TODO: These should really be a group_var
+root_web_directories:
+  - { name: david-site, docroot: /var/www/david, owner: david, group: david, mode: "0755", wsgi: true, backend_port: 8181 }
+  - { name: eve-site, docroot: /var/www/eve, owner: eve, group: eve, mode: "0755", wsgi: true, backend_port: 8182 }
+  # Notice the setguid "2" in the mode, that way files are written as the group
+  - { name: tide-report, docroot: /var/www/tide-report, owner: www-data, group: developer, mode: "2755", wsgi: true, backend_port: 8183 }

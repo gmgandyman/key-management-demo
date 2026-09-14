@@ -9,6 +9,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 # openssh-client because we're going to be doing a lot of SSH work
 # shellcheck because we're going to write a lot of shell scripts, and linting is nice to have
 # python3-pip because python package manager, and we want ruff for linting our python files
+# ansible.posix because linux operations
+# ansible.crypto for generating self signed certs
+# community.general for apache helpers
+# postgres because what it says on the tin
 
 RUN apt-get update && \
     apt-get install --yes --no-install-recommends \
@@ -27,10 +31,11 @@ RUN apt-get update && \
     && ansible-galaxy collection install -p /usr/share/ansible/collections \
         ansible.posix \
         community.crypto \
+        community.general \
         community.postgresql \
     && rm -rf /var/lib/apt/lists/*
 
-# Oh HashiCorp...
+# Oh HashiCorp..., this is for packer
 RUN curl -fsSL https://apt.releases.hashicorp.com/gpg \
       | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" \
@@ -39,7 +44,7 @@ RUN curl -fsSL https://apt.releases.hashicorp.com/gpg \
     apt-get install --yes --no-install-recommends packer=1.16.0-* && \
     rm -rf /var/lib/apt/lists/*
 
-# linting
+# linting python scripts
 RUN pip install --break-system-packages ruff
 
 # Boot to a terminal if no command is given

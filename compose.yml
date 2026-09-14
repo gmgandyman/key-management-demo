@@ -7,14 +7,41 @@ volumes:
   postgres-data:
 
 services:
-  postgres:
+  postgres-db:
     container_name: postgres-db
     image: ${POSTGRES_IMAGE_NAME}:${IMAGE_TAG}
     networks:
       demo-network:
-        ipv4_address: 10.20.30.3
+        ipv4_address: ${POSTGRES_IP:?POSTGRES_IP not set in .env}
     volumes:
       - postgres-data:/var/lib/postgresql/17/main
+
+  nginx-proxy-passthru:
+    container_name: nginx-proxy-passthru
+    image: ${NGINX_IMAGE_NAME}:${IMAGE_TAG}
+    networks:
+      demo-network:
+        ipv4_address: ${NGINX_IP:?NGINX_IP not set in .env}
+
+  apache2-python:
+    container_name: apache2-python
+    image: ${APACHE_IMAGE_NAME}:${IMAGE_TAG}
+    networks:
+      demo-network:
+        ipv4_address: ${APACHE_IP:?APACHE_IP not set in .env}
+
+  api-endpoint:
+    container_name: api-endpoint
+    image: ${API_IMAGE_NAME}:${IMAGE_TAG}
+    networks:
+      demo-network:
+        ipv4_address: ${API_ENDPOINT_IP:?API_ENDPOINT_IP not set in .env}
+    env_file: .env
+    ports:
+      - "${API_HTTP_PORT}:${API_HTTP_PORT}"   # the only box besides nginx that publishes a port
+    environment:
+      SERVER_PORT: ${API_HTTP_PORT:?API_HTTP_PORT not set in .env}
+
 
   toolbox:
     container_name: toolbox-shell
@@ -23,9 +50,15 @@ services:
     image: ${TOOLBOX_IMAGE_NAME:?TOOLBOX_IMAGE_NAME not set in .env}:${IMAGE_TAG:?IMAGE_TAG not set in .env}
     networks:
       demo-network:
-        ipv4_address: 10.20.30.2
+        ipv4_address: ${TOOLBOX_IP:?TOOLBOX_IP not set in .env}
     env_file: .env   # exports every KEY=VALUE in .env as real env vars inside the container
+    environment:
+      # Docker-out-of-docker has one wrinkle. Apps inside the toolbox container see /work, but apps outside,
+      # like docker, do not. So we need a mapping of where apps on the host OS need to write files, and
+      # telling them /work won't be good enough.
+      HOST_PROJECT_DIR: ${PWD}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock   # Yes, we have to do this, we need DooD to do the work
       - .:/work   # yes, we are mounting the entire project under /work in the container
+      - ${PWD}:${PWD}   # This is the mount for the DooD fix above in environment
     working_dir: /work

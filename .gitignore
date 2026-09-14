@@ -7,6 +7,7 @@
 
 # private/public keys
 keys
+ansible/inventory/host_vars/*/keys.yml
 
-# Private to public scripting
-public-release-sync
+# packer's file-staging temp dir (see build-packer.sh)
+.packer-tmp

@@ -1,0 +1,34 @@
+# {{ item.name }} — managed by Ansible (roles/nginx). Do not edit by hand.
+
+# HTTP: redirect everything to HTTPS on the matching TLS port
+server {
+  listen {{ item.http_port }};
+  server_name localhost;
+
+  return 301 https://$host:{{ item.https_port }}$request_uri;
+}
+
+# HTTPS: terminate TLS here, pass through to the Apache backend
+server {
+  listen {{ item.https_port }} ssl;
+  server_name localhost;
+
+  ssl_certificate     /etc/nginx/tls/localhost.crt;
+  ssl_certificate_key /etc/nginx/tls/localhost.key;
+
+  # Docker's embedded DNS. A variable in proxy_pass makes nginx resolve the
+  # backend lazily, per-request, instead of once at config-test/startup time
+  # -- the backend container may not exist yet when this config is tested
+  # (e.g. during the Packer build) or may not have started yet at boot.
+  resolver 127.0.0.11 valid=10s;
+
+  location / {
+      set $backend "http://{{ item.backend_host }}:{{ item.backend_port }}";
+      proxy_pass $backend;
+
+      proxy_set_header Host              $host;
+      proxy_set_header X-Real-IP         $remote_addr;
+      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}

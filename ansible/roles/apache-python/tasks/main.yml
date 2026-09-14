@@ -1,0 +1,6 @@
+---
+- import_tasks: enable-apache-mods.yml
+  tags: [apache]
+
+- import_tasks: setup-sites.yml
+  tags: [apache]

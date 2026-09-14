@@ -1,6 +1,4 @@
--- ip_address values match demo-net (10.20.30.0/24, gateway .1, toolbox .2).
--- postgres-db (.3) is pinned in compose.yml; nginx/apache2/bastion (.4-.6) are
--- reserved addresses -- those containers don't exist yet (Phases 3-5).
+-- We really need to find a way to wire these in, or better yet, use a hostname, not IP
 INSERT INTO server (name, ip_address) VALUES
     ('nginx-proxy-passthru', '10.20.30.4'),
     ('apache2-python',       '10.20.30.5'),

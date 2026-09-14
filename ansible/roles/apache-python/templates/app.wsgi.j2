@@ -1,0 +1,13 @@
+# Vhost for {{ item.name }} — managed by Ansible (roles/apache-python). Do not edit by hand.
+
+# wsgi contract calls for application( environment, start_response) and must return bytes, not str
+def application(environment, start_response):
+    status = "200 OK"
+    headers = [
+        ("Content-Type", "text/html")
+    ]
+    start_response(status, headers)
+
+    # Notice the b, we want bytes
+    body = b"<html><body><h1>{{item.name}}'s site is ready for work.</h1></body></html>"
+    return [body]

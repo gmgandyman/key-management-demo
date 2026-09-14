@@ -1,0 +1,4 @@
+nginx_sites:
+  - { name: david-site, http_port: 8081, https_port: 9081, backend_host: apache2-python, backend_port: 8181 }
+  - { name: eve-site,   http_port: 8082, https_port: 9082, backend_host: apache2-python, backend_port: 8182 }
+  - { name: tide-report,  http_port: 8083, https_port: 9083, backend_host: apache2-python, backend_port: 8183 }

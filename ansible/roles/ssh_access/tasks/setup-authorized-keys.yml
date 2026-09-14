@@ -1,0 +1,17 @@
+---
+- name: Abort if deploy shows up in the authorized_users list (see host_vars/[hostname]/keys.yml)
+  ansible.builtin.assert:
+    that:
+      - "'deploy' not in (authorized_users | default([]) | map(attribute='username') | list)"
+    fail_msg: "keys.yml lists 'deploy' as a managed user, this should never happen"
+    quiet: true
+
+- name: Setup the authorized_keys file per user
+  ansible.posix.authorized_key:
+    user: "{{ item.username }}" # which user are we modifying?
+    key: "{{ item.public_key }}" # which key are we adding to their authorized_keys file
+    state: present  # add the key
+    exclusive: true # only the set of keys passed in key are allowed
+  loop: "{{ authorized_users | default([]) }}"
+  loop_control:
+    label: "{{ item.username }}"  # Let's not spit out the entire authorized_keys line in the console

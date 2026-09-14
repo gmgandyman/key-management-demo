@@ -1,0 +1,6 @@
+---
+- import_tasks: setup-tls-self-signed-cert.yml
+  tags: [nginx]
+
+- import_tasks: setup-vhosts.yml
+  tags: [nginx]

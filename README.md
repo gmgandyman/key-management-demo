@@ -7,6 +7,7 @@
 - [Important Directories](#important-directories)
 - [Cold Start](#cold-start)
 - [Clean Slate](#clean-slate)
+- [Final Thoughts](#final-thoughts)
 
 ## Overview
 This originally started as a demo/personal recreation of an API endpoint in Java + Spring Boot for managing
@@ -111,15 +112,20 @@ Note that the 2nd parameter here is the packer/ directory
 bash tools/toolbox/scripts/build-packer.sh
 ```
 
-### Boot up the postgres container
+#### What do I do if my containers won't run
+```docker run -it --rm --entrypoint bash {name}:{tag}``` is your friend. 
+So is ``` /usr/bin/supervisord -c /etc/supervisor/supervisord.conf -n``` from inside the
+running container.
+
+### Boot up the postgres-db container
 ```bash
 # Notice the lack of a --build parameter here
 docker compose up -d
-ping postgres
+ping postgres-db
 ssh -i keys/master_key deploy@postgres
 
 # If you've had to do this a couple of times in a single session (ask me how I know), and your known_hosts file is blocking you
-ssh -i keys/master_key -o StrictHostKeyChecking=no deploy@postgres
+ssh -i keys/master_key -o StrictHostKeyChecking=no deploy@postgres-db
 
 # should show the deploy user id
 deploy@${container-id}:~$ id
@@ -130,41 +136,61 @@ deploy@${container-id}:~$ sudo id
 exit
 ```
 
-### Set up the database
+### Setup the user public/private keys
+
+```bash
+tools/toolbox/scripts/create-keys.sh
+```
+This will create public/private keypairs for users Alice through Eve.
+
+However, you will notice that in the .gitignore file, I have carved out exceptions for keys.yml
+under the ansible/inventory/host_vars. You'll need to generate those yourself. I have
+templates available at tools/ansible-key-files. You just need to copy the
+appropriate public key values inside. You want to setup:
+
+* ansible/inventory/host_vars/apache2-python/keys.yml
+* ansible/inventory/host_vars/nginx-proxy-passthru/keys.yml
+* ansible/inventory/host_vars/postgres-db/keys.yml
+
+If you want to verify you have this setup correctly, you can run:
 ```bash
 cd ansible
-ansible-playbook playbooks/setup-database.yml
-
-# SSH to postgres and use psql to verify the data
-cd ..
-ssh -i keys/master_key deploy@postgres
-
-# Run psql as poastgres user
-sudo -u postgres psql -d authorized_keys
+ansible-inventory --host ${hostname}
 ```
 
-```postgresql
-# The query
-select s.name as server_name, s.ip_address, str.login_account as login, r.name as role_name, au.username, au.email_address, au.public_key
-from app_user au
-       inner join role_to_user rtu on rtu.user_id = au.id
-       inner join role r on rtu.role_id = r.id
-       inner join server_to_role str ON str.role_id = r.id
-       inner join server s ON s.id = str.server_id;
+It will report all the ansible variables for that hose, and under authorized_users,
+you should see the users and their public keys. Postgres and Nginx should only have
+Alice (admin), but apache2-python should have Alice, David, and Eve. (Bob and Charlie
+have to wait for now...)
 
-\q
-```
+### Verify key deployments work
 
 ```bash
-exit
+ssh -i keys/users/alice alice@postgres-db
+ssh -i keys/users/alice alice@nginx-proxy-passthru
+ssh -i keys/users/alice alice@apache2-python
+
+ssh -i keys/users/david david@apache2-python
+ssh -i keys/users/eve eve@apache2-python
 ```
 
-Granted, this way of populating a database is basically glue-and-popsicle sticks. Eventually
-I'd prefer to use Flyway to manage the database schema/migrations.
+### Verify the apache2-python wsgi works
+```bash
+# Check Apache + python WSGI for each site
+curl http://apache2-python:8181
+curl http://apache2-python:8182
+curl http://apache2-python:8183
 
+# Check Nginx with the TLS self signed cert, but not strict hostname check
+curl -k https://nginx-proxy-passthru:9081/
+curl -k https://nginx-proxy-passthru:9082/
+curl -k https://nginx-proxy-passthru:9083/
+```
+
+## Shutdown
 Don't forget to run ```docker compose down``` before leaving the toolbox container.
 
-## Clean Slate
+### Clean Slate
 If you sourced the bash-functions.sh script file, you can run the following bash function to remove any image files
 that the toolbox or packer have created. Note that this includes unbound volume data, which is
 where the Postgres tables are stored.
@@ -173,3 +199,14 @@ where the Postgres tables are stored.
 reset-to-blank
 ```
 
+## Final thoughts
+
+So where does that leave this?
+
+* This is a very barebones, traditional IDP, but nowhere near good enough.
+* Docker compose down/up resets a container back to a pristine state, and so 
+  requires an ansible-playbook --limit run every time. Not exactly speedy.
+* User and key management is not going to be scalable. It's already a PitA. Even worse,
+  it required that entire Java API endpoint for key management. I'm recreating
+  an entire authentication solution when these things already exist. So it's
+  back to the drawing board with this to get OICD built in instead.

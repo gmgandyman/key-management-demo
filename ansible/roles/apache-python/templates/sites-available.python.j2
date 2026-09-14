@@ -1,0 +1,10 @@
+# Vhost for {{ item.name }} — managed by Ansible (roles/apache-python). Do not edit by hand.
+
+Listen {{ item.backend_port }}
+
+# Note that the first parameter of WSGIDaemonProcess and WSGIProcessGroup must match
+<VirtualHost *:{{ item.backend_port }}>
+      WSGIScriptAlias / {{ item.docroot}}/app.wsgi
+      WSGIDaemonProcess {{item.name}} user={{item.owner}} group={{item.group}}
+      WSGIProcessGroup {{item.name}}
+</VirtualHost>
